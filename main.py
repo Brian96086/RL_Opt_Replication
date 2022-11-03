@@ -8,7 +8,6 @@ import gym
 
 from tqdm.notebook import tqdm
 
-import datetime
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 from ray.rllib.models import ModelCatalog
 from ray.tune.logger import pretty_print
@@ -16,8 +15,8 @@ from ray.tune.registry import register_env
 from ray.rllib.algorithms.dqn import DQN
 #TODO: swap with ApexTrainer
 
-from Game import Game
-from MyKerasQModel import MyKerasQModel
+from models.Game import Game
+from models.MyKerasQModel import MyKerasQModel
 import ray
 
 
@@ -30,8 +29,11 @@ ray.init()
 
 ModelCatalog.register_custom_model("MLPModel", MyKerasQModel)
 
-#observation_space = gym.spaces.Box(low=0, high=1, shape=(8,))
-observation_space = gym.spaces.Box(low=0, high=1000, shape=(8,))
+#bound for (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
+    # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
+low_bound = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
+observation_space = gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))
 act_space = gym.spaces.Discrete(2)
 
 def gen_policy(i):

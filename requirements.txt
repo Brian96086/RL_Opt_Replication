@@ -8,7 +8,7 @@ pip install pandas scipy matplotlib networkx tqdm
 pip install gym dm_tree
 pip install ray-3.0.0.dev0-cp39-cp39-macosx_10_15_x86_64.whl
 pip install ray[rllib] tensorflow
-pip install ray[debug]
+#pip install ray[debug]
 
 
 

@@ -8,25 +8,30 @@ from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
 import gym
 import copy
+import datetime
 
-from EpiModel import EpiModel
+from .EpiModel import EpiModel
+
+#bound for (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
+    # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
+low_bound = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
 
 class Game(MultiAgentEnv):
     
     def __init__(self):
+        super(Game, self).__init__()
         self.NUM_CITIES = 100
         
         self.NUM_INITIAL_INFECTED = 50
         self.POPULATION = 10000
         
         self.num_agents = 100
-        self.agent_ids = list(range(self.num_agents))
+        self._agent_ids = list(range(self.num_agents))
         
-        self.action_space_dict = dict(zip(self.agent_ids, [gym.spaces.Discrete(2)] * self.num_agents))
-        # self.observation_space_dict = dict(zip(self.agent_ids, [
-        #     gym.spaces.Box(low=-np.inf, high=np.inf, shape=(8,))] * self.num_agents))
-        self.observation_space = dict(zip(self.agent_ids, [
-            gym.spaces.Box(low=-np.inf, high=np.inf, shape=(8,))] * self.num_agents))
+        self.action_space_dict = dict(zip(self._agent_ids, [gym.spaces.Discrete(2)] * self.num_agents))
+        self.observation_space = dict(zip(self._agent_ids, [
+            gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))] * self.num_agents))
 
         self.C_DEAD = 25
         self.C_INF = 10
@@ -122,6 +127,8 @@ class Game(MultiAgentEnv):
         return self.C_ALPHA-self.C_BETA*(self.C_DEAD*self.dead[city] + self.C_INF*self.symptomatic[city] + self.C_LOCK*(364-sum(self.u_onoff[city])))
 
 
+    #dimension = 8 -> (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
+    # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
     def get_observation(self, city):
         return np.hstack([self.population[city], self.symptomatic[city]/self.population[city], sum(self.symptomatic)/sum(self.population),\
                            self.recovered[city]/self.population[city], self.dead[city]/self.population[city], self.ExpPopIn[city],\
@@ -164,7 +171,8 @@ class Game(MultiAgentEnv):
 
 
     def run_simulation(self):
-
+        #if(self.week%1)
+        print("simulation starts at week = ", self.week)
         week = self.week
         u_onoff = self.u_onoff
 
@@ -201,7 +209,7 @@ class Game(MultiAgentEnv):
                 epsilon = .07
 
                 PD = .02
-                print("curr_day = ", 7*week+day)
+                #print("curr_day {0} = , city = {1}, u_onoff = {2}".format(7*week+day, city, self.u_onoff[city,7*week+day]))
                 if self.u_onoff[city,7*week+day] == 1:
                     SEIIRD.add_spontaneous('S', 'E', .07)
                     SEIIRD.add_interaction('S', 'E', 'Is',  0.1)
@@ -217,7 +225,9 @@ class Game(MultiAgentEnv):
                     SEIIRD.add_spontaneous('Is', 'D', PD*mu)
                     SEIIRD.integrate(3, S=S, Ia=Ia, Is=Is, E=E, R=R, D=D, ExpPopIn=ExpPopIn)
                 else:
-                    print("ExpPopIn = ", ExpPopIn)
+                    #print("ExpPopIn = ", ExpPopIn)
+                    #print("else")
+                    ExpPopIn = 0
                     SEIIRD.add_spontaneous('S', 'E', 0)
                     SEIIRD.add_interaction('S', 'E', 'Ia', 0.01)
                     SEIIRD.add_spontaneous('E', 'Ia', epsilon*pa)
@@ -233,6 +243,12 @@ class Game(MultiAgentEnv):
                 self.symptomatic[city] = SEIIRD.Is[2]
                 self.recovered[city] = SEIIRD.R[2]
                 self.dead[city] = SEIIRD.D[2]
+                #print("day = ", 7*week+day)
+                if(self.susceptible[city]<0):print("suspectible<0")
+                if(self.exposed[city]<0):print("exposed<0")
+                if(self.asymptomatic[city]<0):print("asymptomatic<0")
+                if(self.recovered[city]<0):print("recovered<0")
+                if(self.dead[city]<0):print("dead<0")
 
                 ExpPopIn_a[city] = ExpPopIn
 
@@ -242,7 +258,7 @@ class Game(MultiAgentEnv):
             self.global_symptomatic[7*week+day] = sum(self.symptomatic)
             self.global_recovered[7*week+day] = sum(self.recovered)
             self.global_dead[7*week+day] = sum(self.dead)
-
+        #print("simulation done at week = ", self.week)
         return self.susceptible,self.exposed,self.asymptomatic,self.symptomatic,self.recovered,self.dead,\
           self.global_susceptible,self.global_exposed,self.global_asymptomatic,self.global_symptomatic,self.global_recovered,self.global_dead, ExpPopIn_a
 

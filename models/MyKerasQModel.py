@@ -1,5 +1,5 @@
 from ray.rllib.utils import try_import_tf
-from DistributionalQTFModel import OverrideDistributionalQTFModel
+from .DistributionalQTFModel import OverrideDistributionalQTFModel
 
 tf = try_import_tf()[0]
 
