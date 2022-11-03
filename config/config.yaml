@@ -1,0 +1,20 @@
+# DIR: 
+#   exp: ""
+#   snapshot: ""
+
+SIMULATOR:
+  population: 10000
+  node_count: 100
+  sim_type: "naive_seir"
+
+MODEL:
+  backbone: "deepQ"
+
+TRAIN:
+  episode: 500
+
+# VAL:
+#   resume: "model_best.pth"
+#   evaluate_only: False
+#   visualization: False
+
