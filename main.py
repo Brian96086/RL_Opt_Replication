@@ -31,7 +31,7 @@ ModelCatalog.register_custom_model("MLPModel", MyKerasQModel)
 
 #bound for (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
     # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
-low_bound = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+low_bound = np.array([0, 0, 0, 0, 0, 0, -1, -1])
 up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
 observation_space = gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))
 act_space = gym.spaces.Discrete(2)

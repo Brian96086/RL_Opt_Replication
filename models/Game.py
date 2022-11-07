@@ -14,7 +14,7 @@ from .EpiModel import EpiModel
 
 #bound for (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
     # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
-low_bound = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+low_bound = np.array([0, 0, 0, 0, 0, 0, -1, -1])
 up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
 
 class Game(MultiAgentEnv):
@@ -106,7 +106,7 @@ class Game(MultiAgentEnv):
             ax.set_xlabel('Time')
             ax.set_ylabel('Population')
             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            plt.savefig(filename + '.csv', format="png", dpi=150)
+            plt.savefig("results/{0}.png".format(filename))
             plt.close()
             
         done = {"__all__": self.week >= self.max_week,}
@@ -249,6 +249,7 @@ class Game(MultiAgentEnv):
                 if(self.asymptomatic[city]<0):print("asymptomatic<0")
                 if(self.recovered[city]<0):print("recovered<0")
                 if(self.dead[city]<0):print("dead<0")
+                if(self.ExpPopIn[city]<0):print("ExpPopIn<0")
 
                 ExpPopIn_a[city] = ExpPopIn
 
@@ -270,10 +271,12 @@ class Game(MultiAgentEnv):
 
         while sum(population)<self.POPULATION+1:
             if sum(population)<self.POPULATION*0.3:
+                #for each city, multiply the population by random factor within[1,6) (or add by [0,5))
                 population += population * np.random.randint(0, 5, self.NUM_CITIES).astype('int64')
             else:
                 if sum(population)>self.POPULATION-1:
                     break
+                #randomly choose a city(in row vector) and adds 1 person to that city
                 population += np.eye(self.NUM_CITIES)[np.random.choice(self.NUM_CITIES, 1)].astype('int64').reshape(100,) 
 
         A = np.outer(population,population)/(np.sqrt(squareform(pdist(locs)))+np.eye(len(locs)))
