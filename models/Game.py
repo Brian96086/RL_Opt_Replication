@@ -33,11 +33,11 @@ class Game(MultiAgentEnv):
         self.observation_space = dict(zip(self._agent_ids, [
             gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))] * self.num_agents))
 
-        self.C_DEAD = 25
-        self.C_INF = 10
-        self.C_LOCK = 10
+        self.C_DEAD = 2.5*(10**5)
+        self.C_INF = (10**5)
+        self.C_LOCK = 1/364
         self.C_ALPHA = 2
-        self.C_BETA = 0.001
+#         self.C_BETA = 0.001
 
         self.week = 0
         self.max_week = 52
@@ -48,6 +48,7 @@ class Game(MultiAgentEnv):
         self.global_symptomatic = np.zeros(364)
         self.global_recovered = np.zeros(364)
         self.global_dead = np.zeros(364)
+        self.global_lockdown = np.zeros(364)
 
         self.susceptible = np.zeros(self.NUM_CITIES)
         self.exposed = np.zeros(self.NUM_CITIES)
@@ -55,12 +56,12 @@ class Game(MultiAgentEnv):
         self.symptomatic = np.zeros(self.NUM_CITIES)
         self.recovered = np.zeros(self.NUM_CITIES)
         self.dead = np.zeros(self.NUM_CITIES)
+        self.lockdown = np.zeros(self.NUM_CITIES)
 
         self.u_onoff = np.ones([self.NUM_CITIES,364])
         self.local_increase = np.zeros(self.NUM_CITIES)
         self.death_increase = np.zeros(self.NUM_CITIES)
 
-        
         self.A, self.population = self.make_world()
         self.initial_infected = self.make_initial_infected()
 
@@ -96,13 +97,14 @@ class Game(MultiAgentEnv):
             fig, ax = plt.subplots(1)
             (pd.DataFrame(self.global_susceptible)).plot(color=colors[0], linestyle='-', label='Susceptible', ax=ax)
             (pd.DataFrame(self.global_exposed)).plot(color=colors[4], linestyle='-', label='Exposed', ax=ax)
-            (pd.DataFrame(self.global_asymptomatic)).plot(color=colors[1], linestyle=':', label='Asymptomatic', ax=ax)
-            (pd.DataFrame(self.global_symptomatic)).plot(color=colors[1], linestyle='--', label='Symptomatic', ax=ax)
+            (pd.DataFrame(self.global_asymptomatic + self.global_asymptomatic)).plot(color=colors[1], linestyle=':', label='Infected', ax=ax)
+            (pd.DataFrame(self.global_lockdown)).plot(color=colors[5], linestyle='-', label='In Lockdown', ax=ax)
             (pd.DataFrame(self.global_recovered)).plot(color=colors[2], linestyle='-', label='Recovered', ax=ax)
             (pd.DataFrame(self.global_dead)).plot(color=colors[7], linestyle='-', label='Dead', ax=ax)
+            
 
             # ax.legend(['Susceptible','Asymptomatic','Symptomatic','Recovered','Dead'])
-            ax.legend(['Susceptible','Exposed','Asymptomatic','Symptomatic','Recovered','Dead'])
+            ax.legend(['Susceptible','Exposed','Infected','In Lockdown','Recovered','Dead'])
             ax.set_xlabel('Time')
             ax.set_ylabel('Population')
             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -124,7 +126,7 @@ class Game(MultiAgentEnv):
 
 
     def get_terminal_reward(self, city):
-        return self.C_ALPHA-self.C_BETA*(self.C_DEAD*self.dead[city] + self.C_INF*self.symptomatic[city] + self.C_LOCK*(364-sum(self.u_onoff[city])))
+        return self.C_ALPHA-((self.C_DEAD*self.dead[city]/self.population[city]) + self.C_INF*(self.symptomatic[city]+self.symptomatic[city])/self.population[city] + self.C_LOCK*(364-sum(self.u_onoff[city])))
 
 
     #dimension = 8 -> (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
@@ -224,6 +226,7 @@ class Game(MultiAgentEnv):
                     SEIIRD.add_spontaneous('Is', 'R', (1-PD)*mu)
                     SEIIRD.add_spontaneous('Is', 'D', PD*mu)
                     SEIIRD.integrate(3, S=S, Ia=Ia, Is=Is, E=E, R=R, D=D, ExpPopIn=ExpPopIn)
+                    self.lockdown[city] = 0
                 else:
                     #print("ExpPopIn = ", ExpPopIn)
                     #print("else")
@@ -236,6 +239,7 @@ class Game(MultiAgentEnv):
                     SEIIRD.add_spontaneous('Is', 'R', (1-PD)*mu)
                     SEIIRD.add_spontaneous('Is', 'D', PD*mu)
                     SEIIRD.integrate(3, S=S, Ia=Ia, Is=Is, E=E, R=R, D=D)
+                    self.lockdown[city] = self.population[city]
 
                 self.susceptible[city] = SEIIRD.S[2]
                 self.exposed[city] = SEIIRD.E[2]
@@ -259,6 +263,7 @@ class Game(MultiAgentEnv):
             self.global_symptomatic[7*week+day] = sum(self.symptomatic)
             self.global_recovered[7*week+day] = sum(self.recovered)
             self.global_dead[7*week+day] = sum(self.dead)
+            self.global_lockdown[7*week+day] = sum(self.lockdown)
         #print("simulation done at week = ", self.week)
         return self.susceptible,self.exposed,self.asymptomatic,self.symptomatic,self.recovered,self.dead,\
           self.global_susceptible,self.global_exposed,self.global_asymptomatic,self.global_symptomatic,self.global_recovered,self.global_dead, ExpPopIn_a
