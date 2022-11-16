@@ -66,6 +66,7 @@ class Game(MultiAgentEnv):
         self.initial_infected = self.make_initial_infected()
 
         self.ExpPopIn = np.zeros(self.NUM_CITIES)
+        self.episode_count = 0
         
     
     def step(self, action_dict):
@@ -92,6 +93,8 @@ class Game(MultiAgentEnv):
         self.week += 1
         if self.week == self.max_week:
             
+            self.episode_count += 1
+            
             colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
             fig, ax = plt.subplots(1)
@@ -107,7 +110,8 @@ class Game(MultiAgentEnv):
             ax.legend(['Susceptible','Exposed','Infected','In Lockdown','Recovered','Dead'])
             ax.set_xlabel('Time')
             ax.set_ylabel('Population')
-            filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+#             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = str(self.episode_count)
             plt.savefig("results/{0}.png".format(filename))
             plt.close()
             
