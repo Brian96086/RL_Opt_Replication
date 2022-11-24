@@ -2,8 +2,9 @@
 #Then run this requirements.txt
 
 
-pip uninstall -y -q pyarrow
-pip install pandas scipy matplotlib networkx tqdm
+#pip uninstall -y -q pyarrow
+pip install pandas 
+pip install scipy matplotlib networkx tqdm
 #RL-related packages (dm_tree is a MultiAgentEnv package)
 pip install gym dm_tree
 pip install ray-3.0.0.dev0-cp38-cp38-macosx_10_15_x86_64.whl
