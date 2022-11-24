@@ -1,6 +1,6 @@
-# DIR: 
-#   exp: ""
-#   snapshot: ""
+DIR: 
+  exp: "testYaml"
+  snapshot: "/Users/brian96086/Documents/DSC180/RL_Opt_Replication/ckpt"
 
 SIMULATOR:
   population: 10000
@@ -11,10 +11,12 @@ MODEL:
   backbone: "deepQ"
 
 TRAIN:
-  episode: 500
+  episode: 100
+  resume: "checkpoint_000000"
+  
 
-# VAL:
-#   resume: "model_best.pth"
-#   evaluate_only: False
-#   visualization: False
+VAL:
+  resume: "checkpoint_000000"
+  evaluate_only: False
+  visualization: False
 

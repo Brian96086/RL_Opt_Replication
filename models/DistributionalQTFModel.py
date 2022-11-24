@@ -7,7 +7,7 @@ import numpy as np
 
 tf = try_import_tf()[0]
 
-
+#This class is completely redundant comapring to rllib's dqn.DistributionalQTFModel
 class OverrideDistributionalQTFModel(DistributionalQTFModel):
     """Extension of standard TFModel to provide distributional Q values.
     It also supports options for noisy nets and parameter space noise.

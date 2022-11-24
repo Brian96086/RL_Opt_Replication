@@ -1,2 +1,5 @@
 __pycache__/
 results/
+results_old/
+ckpt/
+models/__pycache__/

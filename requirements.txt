@@ -6,7 +6,7 @@ pip uninstall -y -q pyarrow
 pip install pandas scipy matplotlib networkx tqdm
 #RL-related packages (dm_tree is a MultiAgentEnv package)
 pip install gym dm_tree
-pip install ray-3.0.0.dev0-cp39-cp39-macosx_10_15_x86_64.whl
+pip install ray-3.0.0.dev0-cp38-cp38-macosx_10_15_x86_64.whl
 pip install ray[rllib] tensorflow
 pip install pyaml
 #pip install ray[debug]
