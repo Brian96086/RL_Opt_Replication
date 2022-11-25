@@ -20,12 +20,12 @@ class MyKerasQModel(OverrideDistributionalQTFModel):
         layer_1 = tf.keras.layers.Dense(
             12,
             name="my_layer1",
-            activation=tf.nn.relu,
+            activation=tf.nn.tanh,
             kernel_initializer=tf.keras.initializers.he_normal())(self.inputs)
         layer_2 = tf.keras.layers.Dense(
             8,
             name="my_layer2",
-            activation=tf.nn.relu,
+            activation=tf.nn.tanh,
             kernel_initializer=tf.keras.initializers.he_normal())(layer_1)
         layer_out = tf.keras.layers.Dense(
             num_outputs,

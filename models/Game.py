@@ -33,8 +33,9 @@ class Game(MultiAgentEnv):
         self.observation_space = dict(zip(self._agent_ids, [
             gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))] * self.num_agents))
 
-        self.C_DEAD = 2.5*(10**5)
-        self.C_INF = (10**5)
+        self.C_DEAD = 5
+        self.C_INF = 1
+#         self.C_STEPLOCK = 2*(10**2)
         self.C_LOCK = 1/364
         self.C_ALPHA = 2
 #         self.C_BETA = 0.001
@@ -95,25 +96,27 @@ class Game(MultiAgentEnv):
             
             self.episode_count += 1
             
-            colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
-            fig, ax = plt.subplots(1)
-            (pd.DataFrame(self.global_susceptible)).plot(color=colors[0], linestyle='-', label='Susceptible', ax=ax)
-            (pd.DataFrame(self.global_exposed)).plot(color=colors[4], linestyle='-', label='Exposed', ax=ax)
-            (pd.DataFrame(self.global_asymptomatic + self.global_asymptomatic)).plot(color=colors[1], linestyle=':', label='Infected', ax=ax)
-            (pd.DataFrame(self.global_lockdown)).plot(color=colors[5], linestyle='-', label='In Lockdown', ax=ax)
-            (pd.DataFrame(self.global_recovered)).plot(color=colors[2], linestyle='-', label='Recovered', ax=ax)
-            (pd.DataFrame(self.global_dead)).plot(color=colors[7], linestyle='-', label='Dead', ax=ax)
+            if self.episode_count % 20 == 0:
             
+                colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-            # ax.legend(['Susceptible','Asymptomatic','Symptomatic','Recovered','Dead'])
-            ax.legend(['Susceptible','Exposed','Infected','In Lockdown','Recovered','Dead'])
-            ax.set_xlabel('Time')
-            ax.set_ylabel('Population')
-#             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = str(self.episode_count)
-            plt.savefig("results/{0}.png".format(filename))
-            plt.close()
+                fig, ax = plt.subplots(1)
+                (pd.DataFrame(self.global_susceptible)).plot(color=colors[0], linestyle='-', label='Susceptible', ax=ax)
+                (pd.DataFrame(self.global_exposed)).plot(color=colors[4], linestyle='-', label='Exposed', ax=ax)
+                (pd.DataFrame(self.global_asymptomatic + self.global_asymptomatic)).plot(color=colors[1], linestyle=':', label='Infected', ax=ax)
+                (pd.DataFrame(self.global_lockdown)).plot(color=colors[5], linestyle='-', label='In Lockdown', ax=ax)
+                (pd.DataFrame(self.global_recovered)).plot(color=colors[2], linestyle='-', label='Recovered', ax=ax)
+                (pd.DataFrame(self.global_dead)).plot(color=colors[7], linestyle='-', label='Dead', ax=ax)
+
+
+                # ax.legend(['Susceptible','Asymptomatic','Symptomatic','Recovered','Dead'])
+                ax.legend(['Susceptible','Exposed','Infected','In Lockdown','Recovered','Dead'])
+                ax.set_xlabel('Time')
+                ax.set_ylabel('Population')
+    #             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = "policy_" + str(self.episode_count/20)
+                plt.savefig("results/policy/{0}.png".format(filename))
+                plt.close()
             
         done = {"__all__": self.week >= self.max_week,}
         info = {}
@@ -126,7 +129,13 @@ class Game(MultiAgentEnv):
 
 
     def get_step_reward(self, city):
-        return -1 * (self.C_DEAD*self.death_increase[city] + self.local_increase[city] + self.C_LOCK*(1-self.u_onoff[city, 7*(self.week-1)]))/self.population[city]
+#         print("city: ", city)
+#         print("death increase: ", self.death_increase[city])
+#         print("local infection increase: ", self.local_increase[city])
+#         print("on off: ", self.u_onoff[city, 7*(self.week-1)])
+#         print("reward: ", (self.C_DEAD*self.death_increase[city] + self.C_INF*self.local_increase[city] + self.C_STEPLOCK*(1-self.u_onoff[city, 7*(self.week-1)]))/self.population[city])
+#         print("--------------")
+        return -1 * (self.C_DEAD*self.death_increase[city] + self.C_INF*self.local_increase[city] + self.C_LOCK*(1-self.u_onoff[city, 7*(self.week-1)]))/self.population[city]
 
 
     def get_terminal_reward(self, city):

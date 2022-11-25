@@ -31,7 +31,7 @@ class OverrideDistributionalQTFModel(DistributionalQTFModel):
             use_noisy=False,
             v_min=-10.0,
             v_max=10.0,
-            sigma0=0.5,
+            sigma0=0.1,
             # TODO(sven): Move `add_layer_norm` into ModelCatalog as
             #  generic option, then error if we use ParameterNoise as
             #  Exploration type and do not have any LayerNorm layers in
