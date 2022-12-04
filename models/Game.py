@@ -33,8 +33,8 @@ class Game(MultiAgentEnv):
         self.observation_space = dict(zip(self._agent_ids, [
             gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))] * self.num_agents))
 
-        self.C_DEAD = 30
-        self.C_INF = 6
+        self.C_DEAD = 10
+        self.C_INF = 2
 #         self.C_STEPLOCK = 2*(10**2)
         self.C_LOCK = 1/364
         self.C_ALPHA = 2
