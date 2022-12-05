@@ -33,7 +33,6 @@ class EpiModel(object):
             
             if 'agent' in trans:
                 agent = trans['agent']
-                #rate is multiplied by the fraction of certain state
                 rate *= population[pos[agent]]/N
                 
             diff[pos[source]] -= rate

@@ -8,6 +8,8 @@ from config import cfg
 import os 
 import time
 import datetime
+import matplotlib.pyplot as plt
+import csv
 
 from tqdm.notebook import tqdm
 from ray.rllib.models import ModelCatalog
@@ -22,81 +24,156 @@ from models.TorchQModel import CustomDQNModel
 import ray
 
 
-
-
-POPULATION = 10000
-NUM_CITIES = 100
-
-print(f'python version = {sys.version}')
-register_env("Game", lambda _: Game())
-ray.init()
-
-ModelCatalog.register_custom_model("MLPModel", MyKerasQModel)
-#ModelCatalog.register_custom_model("MLPModel", CustomDQNModel)
-
-#bound for (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
-    # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
-low_bound = np.array([0, 0, 0, 0, 0, 0, -1, -1])
-up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
-observation_space = gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))
-act_space = gym.spaces.Discrete(2)
-
-
-
-def gen_policy(i):
-    config = {
-        "model": {
-            "custom_model": "MLPModel",
-        },
-        "gamma": 0.99,
-        #"parameter_noise": False
-    }
-    return (None, observation_space, act_space, config)
-
-policies = {"policy_0": gen_policy(0)}
-policy_ids = list(policies.keys())
-
-trainer = DQN(
-#trainer = ApexTrainer(
-# trainer = ray.rllib.agents.dqn.DQNTrainer(
-    env="Game",
-    config={
-        "env_config": {},
-
-        # General
-#         "log_level": "ERROR",
-
-        # Method specific
-        "multiagent": {
-            "policies": policies,
-            "policy_mapping_fn": (
-                lambda agent_id: policy_ids[0]),
-        },
-        "lr": 0.0005
-    },
-)
-
 def save_checkpoint(trainer):
     return trainer.save("./ckpt")
+
+def build_trainer(observation_space, act_space):
+    def gen_policy(i):
+        config = {
+            "model": {
+                "custom_model": "MLPModel",
+            },
+            "gamma": 0.99,
+            #"parameter_noise": False
+        }
+        return (None, observation_space, act_space, config)
+
+    policies = {"policy_0": gen_policy(0)}
+    policy_ids = list(policies.keys())
+
+    trainer = DQN(
+    #trainer = ApexTrainer(
+    # trainer = ray.rllib.agents.dqn.DQNTrainer(
+        env="Game",
+        config={
+            "env_config": {},
+
+            # General
+    #         "log_level": "ERROR",
+
+            # Method specific
+            "multiagent": {
+                "policies": policies,
+                "policy_mapping_fn": (
+                    lambda agent_id: policy_ids[0]),
+            },
+            "lr": 0.0005
+        },
+    )
+    return trainer
 
 def main(args):
     print("*"*10)
     print(args)
     print('*'*10)
 
-    for i in range(500):
+    POPULATION = 10000
+    NUM_CITIES = 100
+
+    print(f'python version = {sys.version}')
+    register_env("Game", lambda _: Game())
+    ray.init()
+
+    ModelCatalog.register_custom_model("MLPModel", MyKerasQModel)
+    #ModelCatalog.register_custom_model("MLPModel", CustomDQNModel)
+
+    #bound for (population, symp_city/pop_city, symp_all/pop_all, recovered_city/pop_city, 
+        # dead_city/pop_city, ExpPopIn_city, local_inc_city/pop_city, local_inc_all/pop_all)
+    low_bound = np.array([0, 0, 0, 0, 0, 0, -1, -1])
+    up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
+    observation_space = gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))
+    act_space = gym.spaces.Discrete(2)
+    trainer = build_trainer(observation_space, act_space)
+    # print(f'trainer = {trainer}')
+    # print(f'trainer attributes = { dir(trainer)}')
+    # for (key, value) in vars(trainer).items():
+    #     print(f'trainer.{key} = {value}')
+    #     print(str(type(value)))
+    #     if(str(type(value)) not in ["<class 'NoneType'>", "<class 'float'>", "<class 'int'>", "<class 'str'>", "<class 'list'>", "<class 'bool'>"]):
+    #         iter_var = None
+    #         if(str(type(value)).__contains__("dict")):
+    #             iter_var = value.items()
+    #         else:
+    #             iter_var = vars(value).items()
+
+    #         for (key, value) in iter_var:
+    #             print(f'{key} : {value}')
+    #         print("-"*15)
+    #         print("\n")
+
+    # exit()
+    max_dict = {}
+    mean_dict = {}
+    min_dict = {}
+
+    for i in range(100):
 
         # if(i%10==0):
         #     ckpt_path = save_checkpoint(trainer)
         #     print(f'path = {ckpt_path}')
         #     #print(f'checkpoint saved, trainer empty = {trainer==None}')
         #     trainer.restore(ckpt_path)
-
+        trainer_result = trainer.train()
         with open("results/log.txt", 'a') as f:
-            x = trainer.train()
-            print(type(x))
-            print(x.keys())
-            f.write(pretty_print(trainer.train()))
+            f.write(pretty_print(trainer_result))
+            ckpt_path = save_checkpoint(trainer)
+
+        
+        max_dict[i] = trainer_result["sampler_results"]["episode_reward_max"]          
+        mean_dict[i] = trainer_result["sampler_results"]["episode_reward_mean"]                                       
+        min_dict[i] = trainer_result["sampler_results"]["episode_reward_min"] 
+        
+        #Every 5 epochs, update output data
+        if i % 5 == 0:
+            fig, ax = plt.subplots(1)
+
+            pd.DataFrame(mean_dict.values(), index = np.arange(1, len(mean_dict) + 1)).plot(color = "b", label = "Mean_Reward", ax=ax)
+            
+            plt.fill_between(list(max_dict.keys()), list(min_dict.values()), list(max_dict.values()),color="b", alpha=0.2)
+            
+            ax.legend(["Mean Reward", "Min-Max Reward"])
+            ax.set_xlabel('Episodes')
+            ax.set_ylabel('Reward')
+            filename = "reward_" + str(i)
+            plt.title("Episode " + str(i))
+            plt.savefig("results/reward/{0}.png".format(filename))
+            plt.close()
+
+
+            # define a dictionary with key value pairs
+
+            f = open("results/policy/output_max.csv", "w")
+            max_w = csv.writer(f)
+
+            # loop over dictionary keys and values
+            for key, val in max_dict.items():
+
+                # write every key and value to file
+                max_w.writerow([key, val])
+
+            f.close()
+
+            l = open("results/policy/output_mean.csv", "w")
+            mean_w = csv.writer(l)
+
+            # loop over dictionary keys and values
+            for key, val in mean_dict.items():
+
+                # write every key and value to file
+                mean_w.writerow([key, val])
+
+            l.close()
+
+            k = open("results/policy/output_min.csv", "w")
+            min_w = csv.writer(k)
+
+            # loop over dictionary keys and values
+            for key, val in min_dict.items():
+
+                # write every key and value to file
+                min_w.writerow([key, val])
+
+            k.close()
 
        
 # ------------------------------------------------------------------------
@@ -208,7 +285,11 @@ if __name__ == '__main__':
     
     cfg.DIR.output_dir = os.path.join(cfg.DIR.snapshot, cfg.DIR.exp)
     if not os.path.exists(cfg.DIR.output_dir):
-        os.mkdir(cfg.DIR.output_dir)    
+        os.mkdir(cfg.DIR.output_dir)
+    reward_dir = os.path.join(cfg.DIR.output_dir, "reward")
+    if(not os.path.exists(reward_dir)):
+        os.mkdir(reward_dir)
+
 
     cfg.TRAIN.resume = os.path.join(cfg.DIR.output_dir, cfg.TRAIN.resume)
     cfg.VAL.resume = os.path.join(cfg.DIR.output_dir, cfg.VAL.resume)
