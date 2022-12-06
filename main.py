@@ -77,7 +77,7 @@ min_dict = {}
 
 
 
-for i in range(1, 201):
+for i in range(1, 12):
 #     print(pretty_print(trainer.train()))
     trainer_result = trainer.train()
     max_dict[i] = trainer_result["sampler_results"]["episode_reward_max"]          
@@ -86,10 +86,9 @@ for i in range(1, 201):
     
     print("epoch number is: -----------------------------------------------------------")
     print(i)
-    #Every 5 epochs, update output data
-    if i % 5 == 0:
-        fig, ax = plt.subplots(1)
-        
+    #Every 20 epochs output graph
+    fig, ax = plt.subplots(1)
+
 #         max_lists = max_dict.items() # return a list of tuples
 #         x, y_max = zip(*max_lists) # unpack a list of pairs into two tuples
 
@@ -99,51 +98,51 @@ for i in range(1, 201):
 #         min_lists = min_dict.items() # return a list of tuples
 #         x, y_min = zip(*min_lists) # unpack a list of pairs into two tuples
 
-        pd.DataFrame(mean_dict.values(), index = np.arange(1, len(mean_dict) + 1)).plot(color = "b", label = "Mean_Reward", ax=ax)
-        
-        plt.fill_between(list(max_dict.keys()), list(min_dict.values()), list(max_dict.values()),color="b", alpha=0.2)
-        
-        ax.legend(["Mean Reward", "Min-Max Reward"])
-        ax.set_xlabel('Episodes')
-        ax.set_ylabel('Reward')
-        filename = "reward_" + str(i)
-        plt.title("Episode " + str(i))
-        plt.savefig("results/reward/{0}.png".format(filename))
-        plt.close()
+    pd.DataFrame(mean_dict.values(), index = np.arange(20,len(mean_dict)*20 + 1, 20)).plot(color = "b", label = "Mean_Reward", ax=ax)
+
+    plt.fill_between(np.arange(20,len(mean_dict)*20 + 1, 20), list(min_dict.values()), list(max_dict.values()),color="b", alpha=0.2)
+
+    ax.legend(["Mean Reward", "Min-Max Reward"])
+    ax.set_xlabel('Episodes')
+    ax.set_ylabel('Reward')
+    filename = "reward_" + str(i*20)
+    plt.title("Episode " + str(i*20))
+    plt.savefig("results/reward/{0}.png".format(filename))
+    plt.close()
 
 
-        # define a dictionary with key value pairs
+    # define a dictionary with key value pairs
 
-        # open file for writing, "w" is writing
-        f = open("output_max.csv", "w")
-        max_w = csv.writer(f)
+    # open file for writing, "w" is writing
+    f = open("output_max.csv", "w")
+    max_w = csv.writer(f)
 
-        # loop over dictionary keys and values
-        for key, val in max_dict.items():
+    # loop over dictionary keys and values
+    for key, val in max_dict.items():
 
-            # write every key and value to file
-            max_w.writerow([key, val])
+        # write every key and value to file
+        max_w.writerow([key, val])
 
-        f.close()
+    f.close()
 
-        l = open("output_mean.csv", "w")
-        mean_w = csv.writer(l)
+    l = open("output_mean.csv", "w")
+    mean_w = csv.writer(l)
 
-        # loop over dictionary keys and values
-        for key, val in mean_dict.items():
+    # loop over dictionary keys and values
+    for key, val in mean_dict.items():
 
-            # write every key and value to file
-            mean_w.writerow([key, val])
+        # write every key and value to file
+        mean_w.writerow([key, val])
 
-        l.close()
+    l.close()
 
-        k = open("output_min.csv", "w")
-        min_w = csv.writer(k)
+    k = open("output_min.csv", "w")
+    min_w = csv.writer(k)
 
-        # loop over dictionary keys and values
-        for key, val in min_dict.items():
+    # loop over dictionary keys and values
+    for key, val in min_dict.items():
 
-            # write every key and value to file
-            min_w.writerow([key, val])
+        # write every key and value to file
+        min_w.writerow([key, val])
 
-        k.close()
+    k.close()

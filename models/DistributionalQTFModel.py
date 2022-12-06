@@ -77,14 +77,14 @@ class OverrideDistributionalQTFModel(DistributionalQTFModel):
                     elif add_layer_norm:
                         action_out = tf.keras.layers.Dense(
                             units=q_hiddens[i],
-                            activation=tf.nn.relu)(action_out)
+                            activation=tf.nn.tanh)(action_out)
                         action_out = \
                             tf.keras.layers.LayerNormalization()(
                                 action_out)
                     else:
                         action_out = tf.keras.layers.Dense(
                             units=q_hiddens[i],
-                            activation=tf.nn.relu,
+                            activation=tf.nn.tanh,
                             name="hidden_%d" % i)(action_out)
             else:
                 # Avoid postprocessing the outputs. This enables custom models
@@ -137,7 +137,7 @@ class OverrideDistributionalQTFModel(DistributionalQTFModel):
                                                   sigma0)
                 else:
                     state_out = tf.keras.layers.Dense(
-                        units=q_hiddens[i], activation=tf.nn.relu)(state_out)
+                        units=q_hiddens[i], activation=tf.nn.tanh)(state_out)
                     if add_layer_norm:
                         state_out = tf.keras.layers.LayerNormalization()(
                             state_out)

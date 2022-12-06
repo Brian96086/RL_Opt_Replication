@@ -34,7 +34,7 @@ class Game(MultiAgentEnv):
             gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))] * self.num_agents))
 
         self.C_DEAD = 10
-        self.C_INF = 2
+        self.C_INF = 1
 #         self.C_STEPLOCK = 2*(10**2)
         self.C_LOCK = 1/364
         self.C_ALPHA = 2
@@ -67,7 +67,7 @@ class Game(MultiAgentEnv):
         self.initial_infected = self.make_initial_infected()
 
         self.ExpPopIn = np.zeros(self.NUM_CITIES)
-        self.episode_count = 0
+        self.episode_count = 1
         
     
     def step(self, action_dict):
@@ -96,7 +96,7 @@ class Game(MultiAgentEnv):
             
             self.episode_count += 1
             
-            if self.episode_count % 20 == 0:
+            if self.episode_count % 5 == 0:
             
                 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -114,7 +114,7 @@ class Game(MultiAgentEnv):
                 ax.set_xlabel('Time')
                 ax.set_ylabel('Population')
     #             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = "policy_" + str(self.episode_count/20)
+                filename = "policy_" + str(self.episode_count)
                 plt.savefig("results/policy/{0}.png".format(filename))
                 plt.close()
             
@@ -217,7 +217,8 @@ class Game(MultiAgentEnv):
                 rbeta = 0.95
                 pa = 0.2
                 R0 = 1.7
-
+                
+                psi_lock = 0.01
                 beta = .9
                 mu = 0.04
 
@@ -230,9 +231,16 @@ class Game(MultiAgentEnv):
                     SEIIRD.add_interaction('S', 'E', 'Is',  0.1)
                     SEIIRD.add_interaction('S', 'E', 'Ia',  0.1)
                     ExpPopIn = 0
+                    PopExt = 0
                     for othercity in range(self.NUM_CITIES):
                         ExpPopIn += self.A[city,othercity]*self.u_onoff[othercity,day]*self.asymptomatic[othercity]
-                    SEIIRD.add_interaction('S', 'E', 'ExpPopIn', 0.1)
+                        self.A[city,othercity]*self.u_onoff[othercity,day]*self.asymptomatic[othercity]
+                        PopExt += self.A[city,othercity]*self.u_onoff[othercity,day]*self.asymptomatic[city]
+                    
+                    PopInt = self.u_onoff[othercity,day]*(1-psi_lock)*((self.population[city] - self.dead[city]) + (0.1*self.symptomatic[city])) + psi_lock*((self.population[city] - self.dead[city]) + (0.1*self.symptomatic[city]))
+                    prob_exposure = (Ia + Is + ExpPopIn)/(PopInt + PopExt)
+#                     prob_exposure = 0.1
+                    SEIIRD.add_interaction('S', 'E', 'ExpPopIn', prob_exposure)
                     SEIIRD.add_spontaneous('E', 'Ia', epsilon*pa)
                     SEIIRD.add_spontaneous('E', 'Is', epsilon*(1-pa))
                     SEIIRD.add_spontaneous('Ia', 'R', mu)
