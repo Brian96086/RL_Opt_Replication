@@ -5,7 +5,7 @@ Overview: This repository replicates the above described [paper](https://arxiv.o
 ### Notes to DSC180A TA's
 The replication doesn't contain actual data, given that it's an "online" COVID simulator that varies based on the policy of the reinforcement learning model. In other words, the data is fixed and variable to the actions performed by the model. Last but not least, there is no testing data, given that the task is to maximize the reward and find the optimal policy given a duration, not an inferennnce tasks
 
-### Instructions
+### Instructions - Conda Virtual Environment
 In this section, you'll execute the code with the below steps:
 1. Create a conda environment with python version 3.9 `conda create --name placeholder_name python=3.9`. Note the "placeholder_name" is the environment name that you desire
 2. Activate the conda environment `conda activate placeholder_name`. 
