@@ -15,8 +15,3 @@ TRAIN:
   resume: "checkpoint_000000"
   
 
-VAL:
-  resume: "checkpoint_000000"
-  evaluate_only: False
-  visualization: False
-

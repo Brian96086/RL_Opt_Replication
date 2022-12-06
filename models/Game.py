@@ -19,20 +19,18 @@ up_bound = np.array([10000, 1, 1, 1, 1, 10000, 1, 1])
 
 class Game(MultiAgentEnv):
     
-    def __init__(self):
+    def __init__(self, cfg):
         super(Game, self).__init__()
-        self.NUM_CITIES = 100
+        self.NUM_CITIES = cfg.SIMULATOR.node_count
+        self.NUM_INITIAL_INFECTED = cfg.SIMULATOR.init_infected
+        self.POPULATION = cfg.SIMULATOR.population
         
-        self.NUM_INITIAL_INFECTED = 50
-        #self.NUM_INITIAL_INFECTED = 5000
-        self.POPULATION = 10000
-        
-        self.num_agents = 100
+        self.num_agents = self.NUM_CITIES
         self._agent_ids = list(range(self.num_agents))
         
-        self.action_space_dict = dict(zip(self._agent_ids, [gym.spaces.Discrete(2)] * self.num_agents))
+        self.action_space_dict = dict(zip(self._agent_ids, [gym.spaces.Discrete(cfg.SIMULATOR.num_actions)] * self.num_agents))
         self.observation_space = dict(zip(self._agent_ids, [
-            gym.spaces.Box(low=low_bound, high=up_bound, shape=(8,))] * self.num_agents))
+            gym.spaces.Box(low=low_bound, high=up_bound, shape=(cfg.SIMULATOR.num_obs,))] * self.num_agents))
 
         self.C_DEAD = 2.5*(10**5)
         self.C_INF = (10**5)
@@ -41,15 +39,16 @@ class Game(MultiAgentEnv):
 #         self.C_BETA = 0.001
 
         self.week = 0
-        self.max_week = 52
+        self.max_week = cfg.SIMULATOR.num_weeks
+        self.total_days = 7*self.max_week
 
-        self.global_susceptible = np.zeros(364)
-        self.global_exposed = np.zeros(364)
-        self.global_asymptomatic = np.zeros(364)
-        self.global_symptomatic = np.zeros(364)
-        self.global_recovered = np.zeros(364)
-        self.global_dead = np.zeros(364)
-        self.global_lockdown = np.zeros(364)
+        self.global_susceptible = np.zeros(self.total_days)
+        self.global_exposed = np.zeros(self.total_days)
+        self.global_asymptomatic = np.zeros(self.total_days)
+        self.global_symptomatic = np.zeros(self.total_days)
+        self.global_recovered = np.zeros(self.total_days)
+        self.global_dead = np.zeros(self.total_days)
+        self.global_lockdown = np.zeros(self.total_days)
 
         self.susceptible = np.zeros(self.NUM_CITIES)
         self.exposed = np.zeros(self.NUM_CITIES)
@@ -59,7 +58,7 @@ class Game(MultiAgentEnv):
         self.dead = np.zeros(self.NUM_CITIES)
         self.lockdown = np.zeros(self.NUM_CITIES)
 
-        self.u_onoff = np.ones([self.NUM_CITIES,364])
+        self.u_onoff = np.ones([self.NUM_CITIES,self.total_days])
         self.local_increase = np.zeros(self.NUM_CITIES)
         self.death_increase = np.zeros(self.NUM_CITIES)
 
@@ -87,9 +86,9 @@ class Game(MultiAgentEnv):
         self.local_increase = self.symptomatic - symptomatic_prev
         self.death_increase = self.dead - dead_prev
         
-        reward = {city: self.get_reward(city) for city in range(100)}
+        reward = {city: self.get_reward(city) for city in range(self.NUM_CITIES)}
         
-        observation = {city: self.get_observation(city) for city in range(100)}
+        observation = {city: self.get_observation(city) for city in range(self.NUM_CITIES)}
         
         self.week += 1
         if self.week == self.max_week:
@@ -141,12 +140,12 @@ class Game(MultiAgentEnv):
 
     def reset(self):
         self.week = 0
-        self.global_susceptible = np.zeros(364)
-        self.global_exposed = np.zeros(364)
-        self.global_asymptomatic = np.zeros(364)
-        self.global_symptomatic = np.zeros(364)
-        self.global_recovered = np.zeros(364)
-        self.global_dead = np.zeros(364)
+        self.global_susceptible = np.zeros(self.total_days)
+        self.global_exposed = np.zeros(self.total_days)
+        self.global_asymptomatic = np.zeros(self.total_days)
+        self.global_symptomatic = np.zeros(self.total_days)
+        self.global_recovered = np.zeros(self.total_days)
+        self.global_dead = np.zeros(self.total_days)
 
         self.susceptible = np.zeros(self.NUM_CITIES)
         self.exposed = np.zeros(self.NUM_CITIES)
@@ -155,12 +154,12 @@ class Game(MultiAgentEnv):
         self.recovered = np.zeros(self.NUM_CITIES)
         self.dead = np.zeros(self.NUM_CITIES)
 
-        self.u_onoff = np.ones([self.NUM_CITIES,364])
+        self.u_onoff = np.ones([self.NUM_CITIES,self.total_days])
 
         self.local_increase = np.zeros(self.NUM_CITIES)
         self.death_increase = np.zeros(self.NUM_CITIES)
 
-        return {city: self.get_observation(city) for city in range(100)}
+        return {city: self.get_observation(city) for city in range(self.NUM_CITIES)}
 
     
     def render(self, mode):
@@ -185,6 +184,8 @@ class Game(MultiAgentEnv):
             for city in range(self.NUM_CITIES):
 
                 if week == 0 and day == 0:
+                    # print(city)
+                    # print(len(self.initial_infected))
                     I0 = self.initial_infected[city]
                     N = self.population[city]
                     S = N-I0
@@ -295,15 +296,6 @@ class Game(MultiAgentEnv):
 
 
     def make_initial_infected(self):
-        # total = self.NUM_INITIAL_INFECTED
-        # initial_infected = []
-        # for i in range(self.NUM_CITIES-1):
-        #     val = np.random.randint(0, total)
-        #     initial_infected.append(val)
-        #     total -= val
-        # initial_infected.append(total)
-        
-        
         normalized_pop = self.population / np.sum(self.population)
         #for each infection unit, assign to a city(labelled [0, num_agents))
         #np.random.choice(upper_bound, numbers, prob_dist)
@@ -311,7 +303,7 @@ class Game(MultiAgentEnv):
         #first city has to be non-zero infection or else will create compile error
         inf_to_cities[0] = 0
         #return the infectionn counts for each city
-        
         initial_infected = np.bincount(inf_to_cities)
-        print(f'sum initial infected = {initial_infected.sum()}')
+        initial_infected = np.concatenate([initial_infected, np.zeros(self.num_agents-len(initial_infected))])
+        #print(f'sum initial infected = {initial_infected.sum()}, shape = {initial_infected.shape}')
         return initial_infected

@@ -8,12 +8,8 @@ tf = try_import_tf()[0]
 class MyKerasQModel(OverrideDistributionalQTFModel):
     def __init__(self, observation_space, action_space, num_outputs, model_config,
                  name="my_model",**kw):
-        #import ipdb;ipdb.set_trace()
-        # print("MyKerasQModel keys = {0}".format(model_config.keys()))
-        # model_config["parameter_noise"] = kw["parameter_noise"]
-        # del kw["parameter_noise"]
-        # print(kw.items())
-        # print("parameter noise, exists = ", ("parameter_noise" in kw.keys()))
+        #kw["q_hiddens"] = [12,8,num_outputs]
+        #num_outputs = 2
         super(MyKerasQModel, self).__init__(
             observation_space, action_space, num_outputs, model_config, name, **kw)
         self.inputs = tf.keras.layers.Input(
@@ -43,7 +39,11 @@ class MyKerasQModel(OverrideDistributionalQTFModel):
     
     def forward(self, input_dict, state, seq_lens):
         model_out = self.base_model(input_dict["obs"])
-        model_out = self.softmax(model_out*5)
+        #print(f'kerasQ input = {input_dict["obs"].shape}')
+        #model_out = self.get_q_value_distributions(input_dict["obs"])[0]
+        #print(f'MyKerasQModel model_out shape = {model_out}')
+        
+        #model_out = self.softmax(model_out*5)
         return model_out, state
 
     def metrics(self):

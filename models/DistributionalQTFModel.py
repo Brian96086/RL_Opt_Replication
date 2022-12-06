@@ -66,6 +66,7 @@ class OverrideDistributionalQTFModel(DistributionalQTFModel):
         # setup the Q head output (i.e., model for get_q_values)
         self.model_out = tf.keras.layers.Input(
             shape=(num_outputs, ), name="model_out")
+        self.softmax = tf.keras.layers.Softmax()
 
         def build_action_value(model_out):
             if q_hiddens:
@@ -205,12 +206,12 @@ class OverrideDistributionalQTFModel(DistributionalQTFModel):
             (action_scores, logits, dist) if num_atoms == 1, otherwise
             (action_scores, z, support_logits_per_action, logits, dist)
         """
-
-        return self.q_value_head(model_out)
+        model_out = self.q_value_head(model_out)
+        softmax_output = self.softmax(5*model_out[0])
+        return softmax_output, model_out[1], model_out[2]
 
     def get_state_value(self, model_out):
         """Returns the state value prediction for the given state embedding."""
-
         return self.state_value_head(model_out)
 
     def _noisy_layer(self,
