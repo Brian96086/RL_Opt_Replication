@@ -6,19 +6,21 @@ import numpy as np
 import torch
 import time
 from torch.optim import optimizer
+from models.Game import Game
 
 class Base_Agent(object):
 
-    def __init__(self, config):
+    def __init__(self, config, cfg, agent_idx):
         self.logger = self.setup_logger()
         self.debug_mode = config.debug_mode
         # if self.debug_mode: self.tensorboard = SummaryWriter()
         self.config = config
         self.set_random_seeds(config.seed)
-        self.environment = config.environment
-        self.environment_title = self.get_environment_title()
+        self.environment = Game(cfg=cfg)
+        self.environment_title = "SEIRD"
         self.action_types = "DISCRETE"
         self.action_size = config.action_size
+        self.agent_idx = agent_idx
 
         self.lowest_possible_episode_score = self.get_lowest_possible_episode_score()
 
@@ -42,9 +44,6 @@ class Base_Agent(object):
     def step(self):
         """Takes a step in the game. This method must be overriden by any agent"""
         raise ValueError("Step needs to be implemented by the agent")
-
-    def get_environment_title(self):
-        return "SEIRD"
 
     def get_lowest_possible_episode_score(self):
         """Returns the lowest possible episode score you can get in an environment"""
@@ -140,9 +139,10 @@ class Base_Agent(object):
     def conduct_action(self, action):
         """Conducts an action in the environment"""
         #Environment is stepped in conduct action
-        self.next_state, self.reward, self.done, _ = self.environment.step(action)
+        states, rewards, done, _ = self.environment.step(action)
+        self.next_state, self.reward, self.done, _ = states[self.agent_idx], rewards[self.agent_idx], done, _
         self.total_episode_score_so_far += self.reward
-        if self.hyperparameters["clip_rewards"]: self.reward =  max(min(self.reward, 1.0), -1.0)
+        #if self.hyperparameters["clip_rewards"]: self.reward =  max(min(self.reward, 1.0), -1.0)
 
 
     def save_and_print_result(self):

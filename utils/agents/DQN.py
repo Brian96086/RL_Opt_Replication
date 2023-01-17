@@ -14,8 +14,7 @@ class DQN(Base_Agent):
     """A deep Q learning agent"""
     agent_name = "DQN"
     def __init__(self, config,cfg, agent_idx):
-        Base_Agent.__init__(self, config)
-        self.agent_idx = agent_idx
+        Base_Agent.__init__(self, config, cfg, agent_idx)
         self.memory = Replay_Buffer(self.hyperparameters["buffer_size"], self.hyperparameters["batch_size"], config.seed, self.device)
         #self.q_network_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size)
         self.q_network_local = self.base_model = nn.Sequential(
@@ -50,9 +49,10 @@ class DQN(Base_Agent):
         """Uses the local Q network and an epsilon greedy policy to pick an action"""
         # PyTorch only accepts mini-batches and not single observations so we have to use unsqueeze to add
         # a "fake" dimension to make it a mini-batch rather than a single observation
+        #import ipdb;ipdb.set_trace()
         if state is None: state = self.state
-        if isinstance(state, np.int64) or isinstance(state, int): state = np.array([state])
-        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
+        if isinstance(state, np.int64) or isinstance(state, int): state = np.array([state[self.agent_idx]])
+        state = torch.from_numpy(state[self.agent_idx]).float().unsqueeze(0).to(self.device)
         if len(state.shape) < 2: state = state.unsqueeze(0)
         self.q_network_local.eval() #puts network in evaluation mode
         with torch.no_grad():

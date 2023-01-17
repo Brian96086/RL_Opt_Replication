@@ -3,3 +3,4 @@ results/
 results_old/
 ckpt/
 models/__pycache__/
+Training.log

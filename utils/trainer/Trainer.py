@@ -23,7 +23,7 @@ class Trainer(object):
         #iterate through every agent, where each agent executes its own simulations and updates independently
         for agent_number, agent_class in enumerate(self.agents):
             agent_name = "DQN_{}".format(agent_number)
-            self.run_games_for_agent(agent_number + 1, agent_class)
+            self.run_games_for_agent(agent_number, agent_class)
             if self.config.visualise_overall_agent_results:
                 agent_rolling_score_results = [results[1] for results in  self.results[agent_name]]
                 self.visualise_overall_agent_results(agent_rolling_score_results, agent_name, show_mean_and_std_range=True)
