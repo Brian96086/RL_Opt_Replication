@@ -5,13 +5,36 @@ DIR:
 SIMULATOR:
   population: 10000
   node_count: 100
+  num_obs: 8
+  num_actions: 2
+  
+
   sim_type: "naive_seir"
+
 
 MODEL:
   backbone: "deepQ"
 
+
 TRAIN:
   episode: 100
   resume: "checkpoint_000000"
+  learning_rate: 0.01
+  batch_size: 256
+  buffer_size: 40000
+  epsilon: 1.0
+  epsilon_decay_rate_denominator: 1
+  discount_rate: 0.99
+  tau: 0.01
+  alpha_prioritised_replay: 0.6
+  beta_prioritised_replay: 0.1
+  incremental_td_error: 1e-8
+  update_every_n_steps: 1
+  linear_hidden_units: [30, 15]
+  final_layer_activation: "None"
+  batch_norm: False
+  gradient_clipping_norm: 0.7
+  learning_iterations: 1
+  clip_rewards: False
   
 

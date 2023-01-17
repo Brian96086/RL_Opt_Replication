@@ -70,7 +70,8 @@ class Game(MultiAgentEnv):
         
     
     def step(self, action_dict):
-        
+        if(self.episode_count>=1):
+            return
         if self.week > 0:
             for city in range(self.NUM_CITIES):
                 self.u_onoff[city,7*self.week:7*self.week+8] = action_dict[city]
