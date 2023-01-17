@@ -70,8 +70,7 @@ class Game(MultiAgentEnv):
         
     
     def step(self, action_dict):
-        if(self.episode_count>=1):
-            return
+        print('curr_week = {}'.format(self.week))
         if self.week > 0:
             for city in range(self.NUM_CITIES):
                 self.u_onoff[city,7*self.week:7*self.week+8] = action_dict[city]
@@ -276,7 +275,7 @@ class Game(MultiAgentEnv):
     
     def make_world(self):
         
-        locs = np.random.rand(self.NUM_CITIES, 2)*100
+        locs = np.random.rand(self.NUM_CITIES, 2)*self.NUM_CITIES
         population = np.random.randint(1, 3, self.NUM_CITIES).astype('int64')
 
         while sum(population)<self.POPULATION+1:
@@ -287,7 +286,7 @@ class Game(MultiAgentEnv):
                 if sum(population)>self.POPULATION-1:
                     break
                 #randomly choose a city(in row vector) and adds 1 person to that city
-                population += np.eye(self.NUM_CITIES)[np.random.choice(self.NUM_CITIES, 1)].astype('int64').reshape(100,) 
+                population += np.eye(self.NUM_CITIES)[np.random.choice(self.NUM_CITIES, 1)].astype('int64').reshape(self.NUM_CITIES,) 
 
         A = np.outer(population,population)/(np.sqrt(squareform(pdist(locs)))+np.eye(len(locs)))
         np.fill_diagonal(A, 0)

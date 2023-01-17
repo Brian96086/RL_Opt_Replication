@@ -14,7 +14,7 @@ class DQN(Base_Agent):
     """A deep Q learning agent"""
     agent_name = "DQN"
     def __init__(self, config,cfg, agent_idx):
-        Base_Agent.__init__(self, config, cfg, agent_idx)
+        super().__init__(config, cfg, agent_idx)
         self.memory = Replay_Buffer(self.hyperparameters["buffer_size"], self.hyperparameters["batch_size"], config.seed, self.device)
         #self.q_network_local = self.create_NN(input_dim=self.state_size, output_dim=self.action_size)
         self.q_network_local = self.base_model = nn.Sequential(
@@ -28,22 +28,36 @@ class DQN(Base_Agent):
                                               lr=self.hyperparameters["learning_rate"], eps=1e-4)
         self.exploration_strategy = Epsilon_Greedy_Exploration(config)
 
-    def reset_game(self):
-        super(DQN, self).reset_game()
+    def reset_game(self, other_agents):
+        super(DQN, self).reset_game(other_agents)
         self.update_learning_rate(self.hyperparameters["learning_rate"], self.q_network_optimizer)
 
-    def step(self):
+    def step(self, other_agents):
         """Runs a step within a game including a learning step if required"""
         while not self.done:
+            print('curr_agent num = {}'.format(self.agent_idx))
+            action_dict = {agent.agent_idx: agent.pick_action() for agent in other_agents}
             self.action = self.pick_action()
-            self.conduct_action(self.action)
+            action_dict[self.agent_idx] = self.action
+            states, rewards, done_dict = self.conduct_action(action_dict)
+            self.done = done_dict['__all__']
+            self.update_untrained_agents(other_agents, states, rewards, self.done)
             if self.time_for_q_network_to_learn():
                 for _ in range(self.hyperparameters["learning_iterations"]):
                     self.learn()
             self.save_experience()
             self.state = self.next_state #this is to set the state for the next iteration
             self.global_step_number += 1
+            print(self.global_step_number, self.done)
         self.episode_number += 1
+    
+    def update_untrained_agents(self, other_agents, states, rewards, done):
+        ''' Updates the states of the remaining, untrained agents given the actions they make'''
+        for agent_idx, agent in enumerate(other_agents):
+            if(agent_idx == self.agent_idx): continue
+            agent.state = states[agent_idx]
+            agent.reward = rewards[agent_idx]
+            agent.done = done
 
     def pick_action(self, state=None):
         """Uses the local Q network and an epsilon greedy policy to pick an action"""
@@ -51,8 +65,7 @@ class DQN(Base_Agent):
         # a "fake" dimension to make it a mini-batch rather than a single observation
         #import ipdb;ipdb.set_trace()
         if state is None: state = self.state
-        if isinstance(state, np.int64) or isinstance(state, int): state = np.array([state[self.agent_idx]])
-        state = torch.from_numpy(state[self.agent_idx]).float().unsqueeze(0).to(self.device)
+        state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
         if len(state.shape) < 2: state = state.unsqueeze(0)
         self.q_network_local.eval() #puts network in evaluation mode
         with torch.no_grad():

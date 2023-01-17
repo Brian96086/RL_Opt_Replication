@@ -44,9 +44,8 @@ class Trainer(object):
         agent_results = []
         agent_name = "DQN_{}".format(agent_number)
         agent_round = 1
-        for agent_idx in range(self.config.runs_per_agent):
+        for run in range(self.config.runs_per_agent):
             agent_config = copy.deepcopy(self.config)
-
             # if self.environment_has_changeable_goals(agent_config.environment) and self.agent_cant_handle_changeable_goals_without_flattening(agent_name):
             #     print("Flattening changeable-goal environment for agent {}".format(agent_name))
             #     agent_config.environment = gym.wrappers.FlattenDictWrapper(agent_config.environment,
@@ -57,11 +56,11 @@ class Trainer(object):
             print("\033[1m" + "{}.{}: {}".format(agent_number, agent_round, agent_name) + "\033[0m", flush=True)
             print("agent model/class = {}".format(agent_class))
             print('agent number = {}'.format(agent_number))
-            agent = agent_class(agent_config, self.cfg, agent_idx = agent_idx)
+            agent = self.agents[agent_number]
             self.environment_name = agent.environment_title
             print(agent.hyperparameters)
             print("RANDOM SEED " , agent_config.seed)
-            game_scores, rolling_scores, time_taken = agent.run_n_episodes()
+            game_scores, rolling_scores, time_taken = agent.run_n_episodes(self.agents[:agent_number]+self.agents[agent_number+1:])
             print("Time taken: {}".format(time_taken), flush=True)
             self.print_two_empty_lines()
             agent_results.append([game_scores, rolling_scores, len(rolling_scores), -1 * max(rolling_scores), time_taken])
@@ -229,7 +228,7 @@ class Trainer(object):
         else:
             raise ValueError("Need to tell this method how to deal with more than 4 plots")
         for ax_ix in range(len(results_data_paths)):
-            self.visualise_preexisting_results(show_image=False, data_path=results_data_paths[ax_ix], ax=axes[ax_ix],
+            self.visualise_preexisting_results(show_image=False, data_path=None, ax=axes[ax_ix],
                                                title=plot_titles[ax_ix], y_limits=y_limits[ax_ix])
         fig.tight_layout()
         fig.subplots_adjust(bottom=0.25)

@@ -87,8 +87,8 @@ def build_config_dict(cfg):
     config.seed = 1
     config.environment = Game(cfg)
     config.num_episodes_to_run = cfg.TRAIN.episode
-    config.file_to_save_data_results = "results/data_and_graphs/Cart_Pole_Results_Data.pkl"
-    config.file_to_save_results_graph = "results/data_and_graphs/Cart_Pole_Results_Graph.png"
+    config.file_to_save_data_results = "results/"
+    config.file_to_save_results_graph = "results/"
     config.show_solution_score = False
     config.visualise_individual_results = False
     config.visualise_overall_agent_results = True
@@ -122,6 +122,13 @@ def build_config_dict(cfg):
     }
     return config
 
+def build_agents(agent_config, cfg, agent_class):
+    agent_list = []
+    for i in range(cfg.SIMULATOR.node_count):
+        agent = agent_class(copy.deepcopy(agent_config), cfg, agent_idx = i)
+        agent_list.append(copy.deepcopy(agent))
+    return agent_list
+
 
 def main(args):
     print(args)
@@ -129,8 +136,7 @@ def main(args):
     # print('cfg ------')
     # print(cfg)
     config = build_config_dict(cfg)
-    #agents = [(i, copy.deepcopy(dqn_model)) for i in range(cfg.SIMULATOR.node_count)]
-    agents = [copy.deepcopy(DQN) for i in range(cfg.SIMULATOR.node_count)]
+    agents = build_agents(config, cfg, DQN)
     trainer = Trainer(config = config, cfg_yaml = cfg, agents = agents)
     trainer.run_games_for_agents()
 
