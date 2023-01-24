@@ -253,6 +253,7 @@ if __name__ == '__main__':
     if not os.path.exists(cfg.DIR.output_dir):
         os.mkdir(cfg.DIR.output_dir)
     reward_dir = os.path.join(cfg.DIR.output_dir, "reward")
+    policy_dir = os.path.join(cfg.DIR.output_dir, "policy")
     if(not os.path.exists(reward_dir)):
         os.mkdir(reward_dir)
 

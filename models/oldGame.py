@@ -21,8 +21,10 @@ class Game(MultiAgentEnv):
     
     def __init__(self, cfg):
         super(Game, self).__init__()
+        self.SAVE_PATH = cfg.DIR.output_dir
         self.NUM_CITIES = cfg.SIMULATOR.node_count
-        self.NUM_INITIAL_INFECTED = cfg.SIMULATOR.init_infected
+        #self.NUM_INITIAL_INFECTED = cfg.SIMULATOR.init_infected
+        self.NUM_INITIAL_INFECTED = int(cfg.SIMULATOR.node_count/2)
         self.POPULATION = cfg.SIMULATOR.population
         
         self.num_agents = self.NUM_CITIES
@@ -111,8 +113,8 @@ class Game(MultiAgentEnv):
                 ax.set_xlabel('Time')
                 ax.set_ylabel('Population')
     #             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = "policy_" + str(self.episode_count/20)
-                plt.savefig("results/policy_small/{0}.png".format(filename))
+                filename = "policy_" + str(self.episode_count)
+                plt.savefig("{}/{}.png".format(self.SAVE_PATH, filename))
                 plt.close()
             
         done = {"__all__": self.week >= self.max_week,}

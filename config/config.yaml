@@ -1,6 +1,6 @@
 DIR: 
-  exp: "testYaml"
-  snapshot: "/Users/brian96086/Documents/DSC180/RL_Opt_Replication/ckpt"
+  exp: "init=10_newSetting"
+  snapshot: "/Users/brian96086/Documents/DSC180/RL_Opt_Replication/results"
 
 SIMULATOR:
   population: 10000
