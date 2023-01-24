@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import time
 from torch.optim import optimizer
-from models.Game import Game
+from models.oldGame import Game
 
 class Base_Agent(object):
 

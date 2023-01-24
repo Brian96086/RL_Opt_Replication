@@ -18,7 +18,8 @@ from utils.trainer.Trainer import Trainer
 from utils.agents.DQN import DQN
 import copy
 
-from models.Game import Game
+#from models.Game import Game
+from models.oldGame import Game
 from models.MyKerasQModel import MyKerasQModel
 
 
