@@ -35,7 +35,6 @@ class DQN(Base_Agent):
     def step(self, other_agents):
         """Runs a step within a game including a learning step if required"""
         while not self.done:
-            print('curr_agent num = {}'.format(self.agent_idx))
             action_dict = {agent.agent_idx: agent.pick_action() for agent in other_agents}
             self.action = self.pick_action()
             action_dict[self.agent_idx] = self.action
@@ -48,7 +47,9 @@ class DQN(Base_Agent):
             self.save_experience()
             self.state = self.next_state #this is to set the state for the next iteration
             self.global_step_number += 1
-            print(self.global_step_number, self.done)
+            if(self.global_step_number % 20 ==0):
+                print('curr_agent num = {}'.format(self.agent_idx))
+                print("step_num = {}, done = {}".format(self.global_step_number, self.done))
         self.episode_number += 1
     
     def update_untrained_agents(self, other_agents, states, rewards, done):
@@ -65,6 +66,9 @@ class DQN(Base_Agent):
         # a "fake" dimension to make it a mini-batch rather than a single observation
         #import ipdb;ipdb.set_trace()
         if state is None: state = self.state
+        if(type(state)==dict):
+            state = state[self.agent_idx]
+
         state = torch.from_numpy(state).float().unsqueeze(0).to(self.device)
         if len(state.shape) < 2: state = state.unsqueeze(0)
         self.q_network_local.eval() #puts network in evaluation mode

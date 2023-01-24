@@ -100,8 +100,9 @@ class Base_Agent(object):
 
     def reset_game(self, other_agents):
         """Resets the game information so we are ready to play a new episode"""
+        #env.reset() resets to the initial states for all cities
         env = self.environment.reset()
-        self.state = env
+        self.state = env[self.agent_idx]
         self.next_state = None
         self.action = None
         self.reward = None
@@ -120,7 +121,7 @@ class Base_Agent(object):
 
         #reset stats for other agents,given they play the same game
         for agent in other_agents:
-            agent.state = env
+            agent.state = env[agent.agent_idx]
             agent.next_state = None
             agent.action, agent.reward, agent.done = None, None, False
             agent.total_episode_score_so_far = 0
@@ -233,6 +234,8 @@ class Base_Agent(object):
         """Saves the recent experience to the memory buffer"""
         if memory is None: memory = self.memory
         if experience is None: experience = self.state, self.action, self.reward, self.next_state, self.done
+        if(type(self.state)==dict):
+            print('state is dict for  = {}'.format(self.state))
         memory.add_experience(*experience)
 
     def take_optimisation_step(self, optimizer, network, loss, clipping_norm=None, retain_graph=False):
