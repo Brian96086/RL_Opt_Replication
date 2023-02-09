@@ -24,7 +24,7 @@ class EpiModel(object):
         
     def add_spontaneous(self, source, target, rate, pop):
         D_inf = 14
-        #draw from multinomial distribution at rate 1/D_cub
+        #draw from multinomial distribution at rate 1/D_inf
         prob = random.multinomial(pop, [1/D_inf, 1-(1/D_inf)])[0]
         self.transitions.add_edge(source, target, rate=rate, pop=pop, prob=prob)
                             #draw from 1/14
@@ -40,8 +40,7 @@ class EpiModel(object):
             trans = edge[2]
 
             num_transmissions = trans["prob"]
-            # print("prob", num_transmissions)
-
+            # print("num_transmissions", num_transmissions)
 
             for i in range(num_transmissions):
                 rate = trans['rate']*population[pos[source]]
@@ -50,8 +49,21 @@ class EpiModel(object):
                     agent = trans['agent']
                     rate *= population[pos[agent]]/N
 
+                if source == target:
+                    print("source is target")
+                    diff[pos[source]] -= rate
+
                 diff[pos[source]] -= rate
                 diff[pos[target]] += rate
+            
+            # rate = trans['rate']*population[pos[source]]
+
+            # if 'agent' in trans:
+            #     agent = trans['agent']
+            #     rate *= population[pos[agent]]/N
+
+            # diff[pos[source]] -= rate
+            # diff[pos[target]] += rate
 
         return diff
 
