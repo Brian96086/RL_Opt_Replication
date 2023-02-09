@@ -64,7 +64,7 @@ class Game(MultiAgentEnv):
         self.death_increase = np.zeros(self.NUM_CITIES)
 
         self.A, self.population = self.make_world()
-        print("population: ", self.population)
+        # print("population: ", self.population)
         self.initial_infected = self.make_initial_infected()
         # print("init infected: ", self.initial_infected)
         # print("init_exposed: ", self.initial_exposed)
@@ -77,7 +77,8 @@ class Game(MultiAgentEnv):
         
         if self.week > 0:
             for city in range(self.NUM_CITIES):
-                self.u_onoff[city,7*self.week:7*self.week+8] = action_dict[city]
+                self.u_onoff[city,7*self.week:7*self.week+8] = 1
+                # self.u_onoff[city,7*self.week:7*self.week+8] = action_dict[city]
 
         symptomatic_prev = copy.deepcopy(self.symptomatic)
         dead_prev = copy.deepcopy(self.dead)
@@ -99,27 +100,36 @@ class Game(MultiAgentEnv):
             
             self.episode_count += 1
             
-            if self.episode_count % 5 == 0:
+            if self.episode_count % 1 == 0:
             
                 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
                 fig, ax = plt.subplots(1)
-                (pd.DataFrame(self.global_susceptible)).plot(color=colors[0], linestyle='-', label='Susceptible', ax=ax)
-                (pd.DataFrame(self.global_exposed)).plot(color=colors[4], linestyle='-', label='Exposed', ax=ax)
-                (pd.DataFrame(self.global_asymptomatic + self.global_asymptomatic)).plot(color=colors[1], linestyle=':', label='Infected', ax=ax)
+                (pd.DataFrame(self.global_susceptible)).plot(color="black", linestyle='-', label='Susceptible', ax=ax)
+                # (pd.DataFrame(self.global_exposed)).plot(color=colors[4], linestyle='-', label='Exposed', ax=ax)
+                (pd.DataFrame(self.global_symptomatic + self.global_asymptomatic)).plot(color="blue", linestyle='-', label='Infected', ax=ax)
                 (pd.DataFrame(self.global_lockdown)).plot(color=colors[5], linestyle='-', label='In Lockdown', ax=ax)
-                (pd.DataFrame(self.global_recovered)).plot(color=colors[2], linestyle='-', label='Recovered', ax=ax)
-                (pd.DataFrame(self.global_dead)).plot(color=colors[7], linestyle='-', label='Dead', ax=ax)
+                (pd.DataFrame(self.global_recovered)).plot(color="green", linestyle='-', label='Recovered', ax=ax)
+                (pd.DataFrame(self.global_dead)).plot(color="red", linestyle='-', label='Dead', ax=ax)
 
 
                 # ax.legend(['Susceptible','Asymptomatic','Symptomatic','Recovered','Dead'])
-                ax.legend(['Susceptible','Exposed','Infected','In Lockdown','Recovered','Dead'])
+                # ax.legend(['Susceptible','Exposed','Infected','In Lockdown','Recovered','Dead'])
+                ax.legend(['Susceptible','Infected','In Lockdown','Recovered','Dead'])
                 ax.set_xlabel('Time')
                 ax.set_ylabel('Population')
+                ax.grid()
     #             filename  = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
                 filename = "policy_" + str(self.episode_count)
                 plt.savefig("results/policy/{0}.png".format(filename))
                 plt.close()
+
+                # print("S: ", self.global_susceptible)
+                # print("E: ", self.global_exposed)
+                # print("Ia: ", self.global_asymptomatic)
+                # print("Is: ", self.global_symptomatic)
+                # print("R: ", self.global_recovered)
+                # print("N: ", self.population)
             
         done = {"__all__": self.week >= self.max_week,}
         info = {}
@@ -214,7 +224,7 @@ class Game(MultiAgentEnv):
                     # D = 0
                     I0 = self.initial_infected[city]
                     N = self.population[city]
-                    S = N-I0
+                    S = (N-I0)
                     Ia = 0
                     Is = I0
                     E = 0
@@ -234,9 +244,21 @@ class Game(MultiAgentEnv):
                 pa = 0.2
                 R0 = 1.7
 
-                
+                #values for source to target
+                # gamma_sourcetarget = 0.2
+                # sigma = 0.2
+                # mu_sourcetarget = 0.2
+                #https://arxiv.org/abs/2004.00958
+                #beta = 1
+                # gamma 
+                #sigma
+
                 psi_lock = 0.01
-                beta = .9
+                #incubation rate beta (1/ incubation rate)
+                beta = 1/10
+                #recovery rate gamma (1/ infection duration)
+                gamma = 1/14
+                
                 mu = 0.04
 
                 epsilon = .07
@@ -245,41 +267,63 @@ class Game(MultiAgentEnv):
                 #print("curr_day {0} = , city = {1}, u_onoff = {2}".format(7*week+day, city, self.u_onoff[city,7*week+day]))
                 if self.u_onoff[city,7*week+day] == 1:
 
-                    SEIIRD.add_spontaneous('S', 'E', .07, S)
-
-                    SEIIRD.add_interaction('S', 'E', 'Is',  0.1, S)
-                    SEIIRD.add_interaction('S', 'E', 'Ia',  0.1, S)
+                    # SEIIRD.add_spontaneous('S', 'E', .07, S)
+                    SEIIRD.add_interaction('S', 'E', 'Is',  beta, S)
+                    SEIIRD.add_interaction('S', 'E', 'Ia',  beta, S)
 
                     ExpPopIn = 0
                     PopExt = 0
                     for othercity in range(self.NUM_CITIES):
                         ExpPopIn += self.A[city,othercity]*self.u_onoff[othercity,day]*self.asymptomatic[othercity]
-                        self.A[city,othercity]*self.u_onoff[othercity,day]*self.asymptomatic[othercity]
                         PopExt += self.A[city,othercity]*self.u_onoff[othercity,day]*self.asymptomatic[city]
                     
                     PopInt = self.u_onoff[othercity,day]*(1-psi_lock)*((self.population[city] - self.dead[city]) + (0.1*self.symptomatic[city])) + psi_lock*((self.population[city] - self.dead[city]) + (0.1*self.symptomatic[city]))
+
                     prob_exposure = (Ia + Is + ExpPopIn)/(PopInt + PopExt)
                     # prob_exposure = 0.1
-                    SEIIRD.add_interaction('S', 'E', 'ExpPopIn', prob_exposure, S)
-                    SEIIRD.add_spontaneous('E', 'Ia', epsilon*pa, E)
-                    SEIIRD.add_spontaneous('E', 'Is', epsilon*(1-pa), E)
+                    #dS/dt = -(beta S I / N) 
+                    #S transitions
+                    # print("prob exposure: ", prob_exposure)
+                    SEIIRD.add_interaction('S', 'E', 'ExpPopIn', beta*prob_exposure, S)
+                    # SEIIRD.add_interaction('S', 'E', 'ExpPopIn', prob_exposure, S)
+                    #source to target
+                    #SEIIRD.add_spontaneous('S', 'S', -mu_sourcetarget, S)
+                    #dE/dt = (beta S I / N) 
+
+                    #E transitions
+                    SEIIRD.add_spontaneous('E', 'Ia', gamma*pa, E)
+                    SEIIRD.add_spontaneous('E', 'Is', gamma*(1-pa), E)
+                    #source to target
+                    #SEIIRD.add_spontaneous('E', 'E', sigma, E)
+                    #dI/dt = gamma E - mu I
+                    #I transitions
                     SEIIRD.add_spontaneous('Ia', 'R', mu, Ia)
-                    SEIIRD.add_spontaneous('Is', 'R', (1-PD)*mu, Is)
                     SEIIRD.add_spontaneous('Is', 'D', PD*mu, Is)
+                    SEIIRD.add_spontaneous('Is', 'R', (1-PD)*mu, Is)
+                    #source to target
+                    # SEIIRD.add_spontaneous('Ia', 'Ia', gamma, Ia)
+                    # SEIIRD.add_spontaneous('Is', 'Is', gamma, I)
+
+                    #dR/dt = gamma I
+                    #R Transitions
+                    #source to target
+                    # SEIIRD.add_spontaneous('R', 'R', gamma, Ia)
+                    
                     SEIIRD.integrate(3, S=S, Ia=Ia, Is=Is, E=E, R=R, D=D, ExpPopIn=ExpPopIn)
+
                     self.lockdown[city] = 0
+
                 else:
-                    #print("ExpPopIn = ", ExpPopIn)
-                    #print("else")
                     ExpPopIn = 0
-                    SEIIRD.add_spontaneous('S', 'E', 0, S)
                     SEIIRD.add_interaction('S', 'E', 'Ia', 0.01, S)
-                    SEIIRD.add_spontaneous('E', 'Ia', epsilon*pa, E)
-                    SEIIRD.add_spontaneous('E', 'Is', epsilon*(1-pa), E)
+                    SEIIRD.add_spontaneous('E', 'Ia', gamma*pa, E)
+                    SEIIRD.add_spontaneous('E', 'Is',gamma*(1-pa), E)
                     SEIIRD.add_spontaneous('Ia', 'R', mu, Ia)
-                    SEIIRD.add_spontaneous('Is', 'R', (1-PD)*mu, Is)
                     SEIIRD.add_spontaneous('Is', 'D', PD*mu, Is)
+                    SEIIRD.add_spontaneous('Is', 'R', (1-PD)*mu, Is)
+
                     SEIIRD.integrate(3, S=S, Ia=Ia, Is=Is, E=E, R=R, D=D)
+
                     self.lockdown[city] = self.population[city]
 
                 self.susceptible[city] = SEIIRD.S[2]
@@ -324,10 +368,14 @@ class Game(MultiAgentEnv):
                     break
                 #randomly choose a city(in row vector) and adds 1 person to that city
                 population += np.eye(self.NUM_CITIES)[np.random.choice(self.NUM_CITIES, 1)].astype('int64').reshape(100,) 
-
+        # print("pop: ", population)
         A = np.outer(population,population)/(np.sqrt(squareform(pdist(locs)))+np.eye(len(locs)))
+        # print("outer: ", np.outer(population,population))
+        # print("squareform denominator: ", (np.sqrt(squareform(pdist(locs)))+np.eye(len(locs))))
+        # print("A bfore division: ",  A)
         np.fill_diagonal(A, 0)
-        A = A/np.max(A)
+        A = A/(np.max(A))
+        # print("A:", A)
 
         return A, population
 
@@ -354,14 +402,13 @@ class Game(MultiAgentEnv):
         # initial_infected.append(total_infected)
         # initial_exposed.append(total_exposed)
 
-        
         # return A, population, initial_infected, initial_exposed
 
     def make_initial_infected(self):
         total = self.NUM_INITIAL_INFECTED
         initial_infected = []
         for i in range(self.NUM_CITIES-1):
-            val = np.random.randint(0, total)
+            val = np.random.randint(0, max(total/2, 1))
             initial_infected.append(val)
             total -= val
         initial_infected.append(total)
